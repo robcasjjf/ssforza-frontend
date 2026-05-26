@@ -458,13 +458,20 @@ a { text-decoration: none; color: inherit; }
 .product-card {
   background: var(--white);
   cursor: pointer;
-  transition: all 0.25s;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, border-color 0.35s ease;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  border: 2px solid transparent;
+  border-radius: 4px;
 }
-.product-card:hover { z-index: 2; transform: scale(1.02); box-shadow: 0 12px 48px rgba(0,0,0,0.2); }
+.product-card:hover {
+  z-index: 2;
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.18), 0 0 0 2px rgba(91,189,78,0.35), 0 8px 32px rgba(91,189,78,0.12);
+  border-color: rgba(91,189,78,0.4);
+}
 
 .product-card-img {
   aspect-ratio: 4/3;
@@ -481,9 +488,9 @@ a { text-decoration: none; color: inherit; }
   font-size: 64px;
   color: rgba(0,0,0,0.1);
   background: linear-gradient(135deg, #e8f5e6 0%, #d0e8cc 100%);
-  transition: transform 0.4s ease;
+  transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
-.product-card:hover .product-card-img-inner { transform: scale(1.06); }
+.product-card:hover .product-card-img-inner { transform: scale(1.08); }
 .product-card:hover .product-card-img img { transform: scale(1.06); }
 
 .product-card-img .overlay {
@@ -936,9 +943,11 @@ footer .inner {
 }
 .hamburger span {
   display: block;
-  width: 24px; height: 2px;
+  width: 26px; height: 2.5px;
   background: var(--white);
-  transition: all 0.2s;
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -960,6 +969,51 @@ footer .inner {
   .cta-wa .inner { grid-template-columns: 1fr; }
   .nav-links { display: none; }
   .hamburger { display: flex; }
+  /* Mobile nav overrides */
+  .nav { padding: 0 20px; gap: 0; justify-content: space-between; }
+  .nav-cta { display: none; }
+  .nav-links.open {
+    display: flex !important;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10,10,10,0.97);
+    backdrop-filter: blur(12px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    animation: menuFadeIn 0.3s ease;
+  }
+  @keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .nav-links.open li a {
+    font-size: 28px !important;
+    padding: 16px 40px !important;
+    color: rgba(255,255,255,0.85) !important;
+    text-align: center;
+    display: block;
+  }
+  .nav-links.open li a:hover { color: var(--green) !important; }
+  .nav-links.open .mobile-cta {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 32px;
+    padding: 0 40px;
+    width: 100%;
+  }
+  .nav-links.open .mobile-cta a {
+    font-size: 16px !important;
+    text-align: center !important;
+    padding: 14px 32px !important;
+    border-radius: 6px;
+  }
+  .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+  .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 }
 @media (max-width: 640px) {
   .catalog-section, .about-section, .finance-section, .stats-bar, footer { padding-left: 20px; padding-right: 20px; }
@@ -992,6 +1046,10 @@ footer .inner {
     <li><a href="#financiamiento">Financiamiento</a></li>
     <li><a href="#nosotros">Nosotros</a></li>
     <li><a href="#contacto">Contacto</a></li>
+    <li class="mobile-cta" style="display:none">
+      <a href="#contacto" class="btn-green btn-green-lg" onclick="toggleMenu()">💬 Cotizar ahora</a>
+      <a href="#catalogo" class="btn-outline" onclick="toggleMenu()" style="text-align:center">Ver catálogo</a>
+    </li>
   </ul>
 
   <div class="nav-cta">
@@ -1424,12 +1482,22 @@ document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el))
 // ── Mobile menu ──────────────────────────────────────────────────────────────
 function toggleMenu() {
   const links = document.querySelector('.nav-links')
-  if (links.style.display === 'flex') {
-    links.style.display = 'none'
-  } else {
-    links.style.cssText = 'display:flex;flex-direction:column;position:absolute;top:72px;left:0;right:0;background:#0D0D0D;padding:16px 20px;gap:4px;border-bottom:2px solid #5BBD4E;z-index:98'
-  }
+  const burger = document.querySelector('.hamburger')
+  const isOpen = links.classList.contains('open')
+  links.classList.toggle('open', !isOpen)
+  burger.classList.toggle('open', !isOpen)
+  document.body.style.overflow = isOpen ? '' : 'hidden'
 }
+// Close menu on nav link click
+document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
+  a.addEventListener('click', () => {
+    const links = document.querySelector('.nav-links')
+    const burger = document.querySelector('.hamburger')
+    links.classList.remove('open')
+    burger.classList.remove('open')
+    document.body.style.overflow = ''
+  })
+})
 
 // ── Smooth scroll ────────────────────────────────────────────────────────────
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {

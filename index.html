@@ -1477,8 +1477,10 @@ function toggleMenu() {
 // ── Smooth scroll ────────────────────────────────────────────────────────────
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', function(e) {
+    const href = this.getAttribute('href')
+    if (!href || href === '#') return
     e.preventDefault()
-    const target = document.querySelector(this.getAttribute('href'))
+    const target = document.querySelector(href)
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
   })
 })
@@ -1604,10 +1606,33 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 .pd-use-icon{font-size:22px;flex-shrink:0;margin-top:2px}
 .pd-use strong{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:#fff;margin-bottom:3px}
 .pd-use span{font-size:12px;color:rgba(255,255,255,.4);font-family:'Barlow',sans-serif}
-.pd-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:#0D0D0D}
-.pd-gitem{aspect-ratio:4/3;overflow:hidden;background:#f0f0f0;display:flex;align-items:center;justify-content:center;padding:16px;cursor:pointer}
-.pd-gitem img{width:100%;height:100%;object-fit:contain;transition:transform .4s}
-.pd-gitem:hover img{transform:scale(1.06)}
+
+/* ── Product Carousel ── */
+.pd-carousel-wrap{background:#111;padding:40px 0 48px;position:relative}
+.pd-carousel-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#5BBD4E;padding:0 40px 20px;padding-left:40px;border-left:none;display:block}
+.pd-carousel-label span{display:inline-block;border-left:3px solid #5BBD4E;padding-left:12px}
+.pd-carousel{display:flex;gap:16px;padding:0 40px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none}
+.pd-carousel::-webkit-scrollbar{display:none}
+.pd-carousel-item{flex:0 0 280px;background:#1a1a1a;border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .25s;scroll-snap-align:start;position:relative}
+.pd-carousel-item:hover{border-color:rgba(91,189,78,.4);transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
+.pd-carousel-img{height:180px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden}
+.pd-carousel-img img{width:100%;height:100%;object-fit:contain;transition:transform .4s}
+.pd-carousel-item:hover .pd-carousel-img img{transform:scale(1.06)}
+.pd-carousel-info{padding:14px 16px 16px}
+.pd-carousel-name{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;text-transform:uppercase;color:#fff;margin-bottom:4px;letter-spacing:.02em}
+.pd-carousel-tag{font-size:11px;color:rgba(255,255,255,.35);font-family:'Barlow',sans-serif}
+.pd-carousel-link{display:flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#5BBD4E;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06);transition:gap .2s}
+.pd-carousel-item:hover .pd-carousel-link{gap:10px}
+.pd-carousel-nav{display:flex;gap:8px;justify-content:center;margin-top:24px}
+.pd-carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:all .2s}
+.pd-carousel-dot.active{background:#5BBD4E;width:20px;border-radius:3px}
+.pd-carousel-arrows{position:absolute;top:50%;transform:translateY(-50%);width:100%;display:flex;justify-content:space-between;padding:0 8px;pointer-events:none}
+.pd-carousel-btn{width:38px;height:38px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:all;transition:all .2s;color:white;font-size:16px}
+.pd-carousel-btn:hover{background:#5BBD4E;border-color:#5BBD4E}
+@media(max-width:900px){.pd-carousel{padding:0 20px}.pd-carousel-label{padding:0 20px 20px}.pd-carousel-item{flex:0 0 240px}}
+
+
+
 .pd-cta{background:#5BBD4E;padding:48px 40px;text-align:center}
 .pd-cta h3{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;text-transform:uppercase;color:#0D0D0D;margin-bottom:8px}
 .pd-cta p{font-size:15px;color:rgba(0,0,0,.6);margin-bottom:28px;font-family:'Barlow',sans-serif}
@@ -1640,7 +1665,11 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     <div><div class="pd-label">Especificaciones Técnicas</div><table class="pd-specs" id="pd-specs"></table></div>
     <div><div class="pd-label">Aplicaciones y Usos</div><div class="pd-uses" id="pd-uses"></div></div>
   </div>
-  <div class="pd-gallery" id="pd-gallery"></div>
+  <div class="pd-carousel-wrap">
+    <span class="pd-carousel-label"><span>Otros equipos disponibles</span></span>
+    <div class="pd-carousel" id="pd-gallery"></div>
+    <div class="pd-carousel-nav" id="pd-carousel-nav"></div>
+  </div>
   <div class="pd-cta">
     <h3>¿Este equipo es para ti?</h3>
     <p>Recibe una cotización personalizada hoy mismo. Sin compromiso.</p>
@@ -1650,8 +1679,8 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     </div>
   </div>
 </div><script>
-(function(){
-  function S(id){return document.getElementById(id).src;}
+
+function S(id){return document.getElementById(id).src;}
   var P={
     'caja-seca':{tag:'Almacenamiento Seco',title:'Caja Seca',imgId:'img-cajaseca',
       sub:'El semirremolque más versátil. Ideal para carga general, manufactura y distribución nacional.',
@@ -1690,7 +1719,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       uses:[{i:'🔗',t:'Trenes de Carga',d:'Conexión entre semirremolques en configuración tren.'},{i:'⚖️',t:'Mayor Capacidad',d:'Permite incrementar la carga total del convoy.'},{i:'🛡️',t:'Estabilidad',d:'Mejora la distribución de peso en cargas largas.'},{i:'🚛',t:'Carga Especial',d:'Ideal para piezas sobredimensionadas.'}],
       gallery:['img-dolly','img-portac','img-cajaseca']}
   };
-  window.openProduct=function(slug){
+  function openProduct(slug){
     var p=P[slug];if(!p)return;
     document.getElementById('pd-crumb').textContent=p.title;
     document.getElementById('pd-tag').textContent=p.tag;
@@ -1703,18 +1732,60 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     document.getElementById('pd-cta-wa').href=w;
     document.getElementById('pd-specs').innerHTML=p.specs.map(function(r){return'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>';}).join('');
     document.getElementById('pd-uses').innerHTML=p.uses.map(function(u){return'<div class="pd-use"><div class="pd-use-icon">'+u.i+'</div><div><strong>'+u.t+'</strong><span>'+u.d+'</span></div></div>';}).join('');
-    document.getElementById('pd-gallery').innerHTML=p.gallery.map(function(id){return'<div class="pd-gitem"><img src="'+S(id)+'" alt="'+p.title+'" loading="lazy"></div>';}).join('');
+    
+    // Build carousel with related products (exclude current)
+    var allSlugs = Object.keys(P);
+    var relatedSlugs = allSlugs.filter(function(s){ return s !== slug; });
+    
+    var carouselHTML = relatedSlugs.map(function(s){
+      var rp = P[s];
+      return '<div class="pd-carousel-item" onclick="openProduct(\'' + s + '\')">'
+        +'<div class="pd-carousel-img"><img src="'+S(rp.imgId)+'" alt="'+rp.title+'" loading="lazy"></div>'
+        +'<div class="pd-carousel-info">'
+        +'<div class="pd-carousel-name">'+rp.title+'</div>'
+        +'<div class="pd-carousel-tag">'+rp.tag+'</div>'
+        +'<div class="pd-carousel-link">Ver detalles →</div>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    
+    document.getElementById('pd-gallery').innerHTML = carouselHTML;
+    
+    // Dots navigation
+    var dotsHTML = relatedSlugs.map(function(s,i){
+      return '<div class="pd-carousel-dot'+(i===0?' active':'')+'" onclick="scrollCarousel('+i+')"></div>';
+    }).join('');
+    var navEl = document.getElementById('pd-carousel-nav');
+    if(navEl) navEl.innerHTML = dotsHTML;
+    
+    // Scroll observer for dots
+    var carousel = document.getElementById('pd-gallery');
+    if(carousel){
+      carousel.addEventListener('scroll', function(){
+        var itemW = 296;
+        var idx = Math.round(carousel.scrollLeft / itemW);
+        document.querySelectorAll('.pd-carousel-dot').forEach(function(d,i){
+          d.classList.toggle('active', i === idx);
+        });
+      });
+    }
     var pg=document.getElementById('product-page');
     pg.style.display='block';pg.scrollTop=0;document.body.style.overflow='hidden';
     setTimeout(function(){document.body.style.overflow='';},10);
   };
-  window.closeProduct=function(){
+  
+  function scrollCarousel(idx){
+    var carousel = document.getElementById('pd-gallery');
+    if(carousel) carousel.scrollTo({left: idx * 296, behavior:'smooth'});
+  };
+
+  function closeProduct(){
     document.getElementById('product-page').style.display='none';
     document.body.style.overflow='';
     var c=document.getElementById('catalogo');if(c)c.scrollIntoView({behavior:'smooth'});
   };
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')window.closeProduct();});
-})();
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeProduct();});
+
 </script><style>
 .wa-float{position:fixed;bottom:28px;right:28px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 .wa-float-btn{width:60px;height:60px;background:#25D366;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,.5);text-decoration:none;animation:waPulse 2.5s infinite;transition:transform .2s}
